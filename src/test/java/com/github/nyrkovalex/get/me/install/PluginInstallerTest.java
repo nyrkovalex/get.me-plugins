@@ -3,52 +3,57 @@ package com.github.nyrkovalex.get.me.install;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import com.github.nyrkovalex.get.me.api.GetMe;
 import com.github.nyrkovalex.get.me.env.Envs;
-import com.github.nyrkovalex.seed.Io;
+import com.gtihub.nyrkovalex.seed.nio.Fs;
 
 
 public class PluginInstallerTest {
 	
-	@Mock private Io.File jarFile;
-	@Mock private Io.Fs fs;
-	@Mock private Io.Dir pluginsDir;
+	@Mock private Path jarFile;
+	@Mock private Fs fs;
+	@Mock private Path pluginsDir;
+	@Mock private Path workingDir;
 	@Mock private Envs.Env env;
 
+	@InjectMocks private PluginInstaller installer;
+
 	private final JarParams params = new JarParams("plugin.jar");
-	private PluginInstaller installer;
 	
 	@Before
 	public void setUp() {
 		MockitoAnnotations.initMocks(this);
-		installer = new PluginInstaller(env, fs);
+		when(workingDir.resolve("plugin.jar")).thenReturn(jarFile);
+		when(env.pluginsHome()).thenReturn("/home/me/get.me/plugins");
+		when(fs.path("/home/me/get.me/plugins")).thenReturn(pluginsDir);
 	}
 	
 	
 	@Test(expected = GetMe.Err.class)
 	public void testShouldThrowWhenNoJarParamsPresent() throws Exception {
-		installer.exec("/dev/null", Optional.empty());
+		installer.exec(workingDir, Optional.empty());
 	}
 	
 	@Test
 	public void testShouldCopyJarToPluginsDir() throws Exception {
-		when(fs.file("/dev/null", "plugin.jar")).thenReturn(jarFile);
-		when(env.pluginsHome()).thenReturn("/home/me/get.me/plugins");
-		when(fs.dir("/home/me/get.me/plugins")).thenReturn(pluginsDir);
-		installer.exec("/dev/null", Optional.of(params));
-		verify(jarFile).copyTo(pluginsDir);
+		installer.exec(workingDir, Optional.of(params));
+		verify(fs).copy(jarFile, pluginsDir, StandardCopyOption.REPLACE_EXISTING);
 	}
 	
 	@Test(expected = GetMe.Err.class)
 	public void testShouldRethrowIoError() throws Exception {
-		when(fs.file("/dev/null", "plugin.jar")).thenThrow(Io.Err.class);
-		installer.exec("/dev/null", Optional.of(params));
+		when(fs.copy(jarFile, pluginsDir, StandardCopyOption.REPLACE_EXISTING)).thenThrow(new IOException());
+		installer.exec(workingDir, Optional.of(params));
 	}
 }

@@ -1,56 +1,60 @@
 package com.github.nyrkovalex.get.me.install;
 
-import com.github.nyrkovalex.get.me.api.GetMe;
-import com.github.nyrkovalex.get.me.env.Envs;
-import com.github.nyrkovalex.seed.Io;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.github.nyrkovalex.get.me.api.GetMe;
+import com.github.nyrkovalex.get.me.env.Envs;
+import com.gtihub.nyrkovalex.seed.nio.Fs;
+
 public class ExecJarInstaller implements GetMe.Plugin<JarParams> {
 
-	private final Io.Fs fs;
+	private final Fs fs;
 	private final Envs.Env env;
 
 	public ExecJarInstaller() {
-		this.fs = Io.fs();
+		this.fs = Fs.instance();
 		this.env = Envs.env();
 	}
 
-	ExecJarInstaller(Io.Fs fs, Envs.Env env) {
+	ExecJarInstaller(Fs fs, Envs.Env env) {
 		this.fs = fs;
 		this.env = env;
 	}
 
 	@Override
-	public void exec(String workingDir, Optional<JarParams> params) throws GetMe.Err {
+	public void exec(Path workingDir, Optional<JarParams> params) throws GetMe.Err {
 		JarParams jarParams = params.orElseThrow(() -> {
 			return new GetMe.Err("`jar` parameter must be provided");
 		});
 		String targetPath = jarParams.jar;
 		try {
-			Io.File sourceFile = sourceJar(workingDir, targetPath);
-			Io.File targetFile = targetFile(sourceFile.name());
-			sourceFile.copyTo(targetFile);
-		} catch (Io.Err err) {
+			Path sourceFile = sourceJar(workingDir, targetPath);
+			Path targetFile = targetFile(sourceFile.getFileName());
+			fs.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException err) {
 			throw new GetMe.Err(String.format("Failed to copy %s to %s", targetPath, env.jarPath()), err);
 		}
 	}
 
-	private Io.File targetFile(String sourceFile) throws Io.Err, GetMe.Err {
+	private Path targetFile(Path sourceFileName) throws GetMe.Err {
 		String jarPath = env.jarPath();
 		if (Objects.isNull(jarPath) || jarPath.isEmpty()) {
 			throw new GetMe.Err("JARPATH environment variable is not set");
 		}
-		return fs.file(jarPath, sourceFile);
+		return fs.path(jarPath).resolve(sourceFileName);
 	}
 
-	private Io.File sourceJar(String workingDir, String targetPath) throws GetMe.Err, Io.Err {
+	private Path sourceJar(Path workingDir, String targetPath) throws GetMe.Err {
 		if (Objects.isNull(targetPath) || targetPath.isEmpty()) {
 			throw new GetMe.Err("No \"jar\" param provided");
 		}
-		Io.File sourceFile = fs.file(workingDir, targetPath);
-		if (!sourceFile.exists()) {
-			throw new GetMe.Err(sourceFile.path() + " does not exist");
+		Path sourceFile = workingDir.resolve(targetPath);
+		if (!fs.exists(sourceFile)) {
+			throw new GetMe.Err(sourceFile + " does not exist");
 		}
 		return sourceFile;
 	}

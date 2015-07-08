@@ -5,7 +5,7 @@
 
 	<groupId>com.github.nyrkovalex</groupId>
 	<artifactId>get.me-plugins</artifactId>
-	<version>0.1-alpha</version>
+	<version>0.1-alpha2</version>
 	
 	<properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -18,7 +18,7 @@
 		<dependency>
 			<groupId>com.github.nyrkovalex</groupId>
 			<artifactId>get.me</artifactId>
-			<version>0.1-alpha4</version>
+			<version>0.1-alpha5</version>
 			<scope>provided</scope>
 		</dependency>
     <dependency>

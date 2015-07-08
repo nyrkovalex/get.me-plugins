@@ -3,6 +3,8 @@ package com.github.nyrkovalex.get.me.install;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 import org.junit.Before;
@@ -13,15 +15,17 @@ import org.mockito.MockitoAnnotations;
 
 import com.github.nyrkovalex.get.me.api.GetMe;
 import com.github.nyrkovalex.get.me.env.Envs;
-import com.github.nyrkovalex.seed.Io;
+import com.gtihub.nyrkovalex.seed.nio.Fs;
 
 public class ExecJarInstallerTest {
 
-	@Mock Io.Fs fs;
+	@Mock Fs fs;
 	@Mock Envs.Env env;
-	@Mock Io.File sourceJar;
-	@Mock Io.File targetFile;
-	final String workingDir = "/tmp";
+	@Mock Path sourceJar;
+	@Mock Path targetFile;
+	@Mock Path jarFileName;
+	@Mock Path jarPath;
+	@Mock Path workingDir;
 	@InjectMocks ExecJarInstaller installer;
 
 	Optional<JarParams> params;
@@ -29,11 +33,12 @@ public class ExecJarInstallerTest {
 	@Before
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
-		when(fs.file("/tmp", "myJar")).thenReturn(sourceJar);
-		when(sourceJar.exists()).thenReturn(Boolean.TRUE);
-		when(sourceJar.name()).thenReturn("myJar");
+		when(fs.exists(sourceJar)).thenReturn(true);
+		when(sourceJar.getFileName()).thenReturn(jarFileName);
 		when(env.jarPath()).thenReturn("jarPath");
-		when(fs.file("jarPath", "myJar")).thenReturn(targetFile);
+		when(fs.path("jarPath")).thenReturn(jarPath);
+		when(workingDir.resolve("myJar")).thenReturn(sourceJar);
+		when(jarPath.resolve(jarFileName)).thenReturn(targetFile);
 
 		params = Optional.of(new JarParams("myJar"));
 	}
@@ -51,12 +56,12 @@ public class ExecJarInstallerTest {
 	@Test
 	public void testShouldCopyExecutableJarToJarPath() throws Exception {
 		installer.exec(workingDir, params);
-		verify(sourceJar).copyTo(targetFile);
+		verify(fs).copy(sourceJar, targetFile, StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	@Test(expected = GetMe.Err.class)
 	public void testShouldThrowIfNoJarExists() throws Exception {
-		when(sourceJar.exists()).thenReturn(Boolean.FALSE);
+		when(fs.exists(sourceJar)).thenReturn(false);
 		installer.exec(workingDir, params);
 	}
 

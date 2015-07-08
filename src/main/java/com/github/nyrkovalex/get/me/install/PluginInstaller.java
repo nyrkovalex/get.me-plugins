@@ -1,35 +1,38 @@
 package com.github.nyrkovalex.get.me.install;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 import com.github.nyrkovalex.get.me.api.GetMe;
 import com.github.nyrkovalex.get.me.env.Envs;
-import com.github.nyrkovalex.seed.Io;
+import com.gtihub.nyrkovalex.seed.nio.Fs;
 
 public class PluginInstaller implements GetMe.Plugin<JarParams> {
 
 	private final Envs.Env env;
-	private final Io.Fs fs;
+	private final Fs fs;
 
 	public PluginInstaller() {
-		this(Envs.env(), Io.fs());
+		this(Envs.env(), Fs.instance());
 	}
 
-	PluginInstaller(Envs.Env env, Io.Fs fs) {
+	PluginInstaller(Envs.Env env, Fs fs) {
 		this.env = env;
 		this.fs = fs;
 	}
 
 	@Override
-	public void exec(String workingDir, Optional<JarParams> params) throws GetMe.Err {
+	public void exec(Path workingDir, Optional<JarParams> params) throws GetMe.Err {
 		JarParams jarParams = params.orElseThrow(() -> {
 			return new GetMe.Err("`jar` parameter must be provided");
 		});
 		try {
-			Io.Dir pluginsDir = fs.dir(env.pluginsHome());
-			Io.File targetJar = fs.file(workingDir, jarParams.jar);
-			targetJar.copyTo(pluginsDir);
-		} catch (Io.Err err) {
+			Path pluginsDir = fs.path(env.pluginsHome());
+			Path targetJar = workingDir.resolve(jarParams.jar);
+			fs.copy(targetJar, pluginsDir, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException err) {
 			throw new GetMe.Err(
 					String.format("Failed to copy %s to %s", jarParams.jar, env.pluginsHome()),
 					err

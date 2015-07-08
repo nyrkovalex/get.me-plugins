@@ -1,6 +1,6 @@
 package com.github.nyrkovalex.get.me.mvn;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,6 +15,7 @@ import org.codehaus.plexus.util.cli.CommandLineException;
 
 import com.github.nyrkovalex.get.me.api.GetMe;
 import com.github.nyrkovalex.seed.Seed;
+import com.github.nyrkovalex.seed.logging.Logging;
 
 class Mvn {
 
@@ -32,7 +33,7 @@ class Mvn {
 
 	static class Runner {
 
-		private static final Logger LOG = Seed.logger(Runner.class);
+		private static final Logger LOG = Logging.logger(Runner.class);
 		private final MvnApi api;
 		private final List<String> goals;
 		private boolean enableOutput = false;
@@ -47,7 +48,7 @@ class Mvn {
 			return this;
 		}
 
-		public void in(String path) throws GetMe.Err {
+		public void in(Path path) throws GetMe.Err {
 			LOG.fine(() -> String.format("running `mvn %s` in %s", Seed.Strings.join(" ", goals), path));
 			InvocationRequest request = createInvocationRequest(path);
 			Invoker invoker = createMvnInvoker(path);
@@ -71,18 +72,18 @@ class Mvn {
 			}
 		}
 
-		private Invoker createMvnInvoker(String path) {
+		private Invoker createMvnInvoker(Path path) {
 			Invoker invoker = api.invoker();
-			invoker.setWorkingDirectory(Paths.get(path).toFile());
+			invoker.setWorkingDirectory(path.toFile());
 			if (!enableOutput) {
 				invoker.setOutputHandler(null);
 			}
 			return invoker;
 		}
 
-		private InvocationRequest createInvocationRequest(String path) {
+		private InvocationRequest createInvocationRequest(Path path) {
 			InvocationRequest request = api.invocationRequest();
-			request.setPomFile(Paths.get(path, POM_XML_NAME).toFile());
+			request.setPomFile(path.resolve(POM_XML_NAME).toFile());
 			request.setGoals(goals);
 			return request;
 		}
