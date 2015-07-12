@@ -1,0 +1,17 @@
+[
+	{
+		"class": "com.github.nyrkovalex.get.me.mvn.MvnBuilder",
+		"params": {
+			"goals": [
+				"clean",
+				"package"
+			]
+		}
+	},
+	{
+		"class": "com.github.nyrkovalex.get.me.install.PluginInstaller",
+		"params": {
+			"jar": "target/get.me-plugins.jar"
+		}
+	}
+]

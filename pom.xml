@@ -6,7 +6,7 @@
 	<groupId>com.github.nyrkovalex</groupId>
 	<artifactId>get.me-plugins</artifactId>
 	<version>0.1-alpha2</version>
-	
+
 	<properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
@@ -28,15 +28,9 @@
     </dependency>
 
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-      <version>1.10.19</version>
+      <groupId>com.github.nyrkovalex</groupId>
+      <artifactId>seed-test</artifactId>
+      <version>0.1-alpha2</version>
       <scope>test</scope>
     </dependency>
 	</dependencies>

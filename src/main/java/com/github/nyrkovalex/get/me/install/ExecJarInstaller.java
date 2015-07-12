@@ -1,60 +1,56 @@
 package com.github.nyrkovalex.get.me.install;
 
+import com.github.nyrkovalex.get.me.api.GetMe;
+import com.github.nyrkovalex.seed.Sys;
+import com.gtihub.nyrkovalex.seed.nio.Fs;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.Optional;
 
-import com.github.nyrkovalex.get.me.api.GetMe;
-import com.github.nyrkovalex.get.me.env.Envs;
-import com.gtihub.nyrkovalex.seed.nio.Fs;
-
 public class ExecJarInstaller implements GetMe.Plugin<JarParams> {
 
 	private final Fs fs;
-	private final Envs.Env env;
+	private final Sys.Environment env;
 
 	public ExecJarInstaller() {
-		this.fs = Fs.instance();
-		this.env = Envs.env();
+		this(Fs.instance(), Sys.environment());
 	}
 
-	ExecJarInstaller(Fs fs, Envs.Env env) {
+	ExecJarInstaller(Fs fs, Sys.Environment env) {
 		this.fs = fs;
 		this.env = env;
 	}
 
 	@Override
-	public void exec(Path workingDir, Optional<JarParams> params) throws GetMe.Err {
-		JarParams jarParams = params.orElseThrow(() -> {
-			return new GetMe.Err("`jar` parameter must be provided");
-		});
+	public void exec(GetMe.ExecutionContext context, Optional<JarParams> params) throws GetMe.PluginException {
+		JarParams jarParams = params.orElseThrow(
+				() -> new GetMe.PluginException("`jar` parameter must be provided"));
 		String targetPath = jarParams.jar;
+		String jarPath = readJarPath();
 		try {
-			Path sourceFile = sourceJar(workingDir, targetPath);
-			Path targetFile = targetFile(sourceFile.getFileName());
+			Path sourceFile = sourceJar(context.getCwd(), targetPath);
+			Path targetFile = fs.path(jarPath).resolve(sourceFile.getFileName());
 			fs.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException err) {
-			throw new GetMe.Err(String.format("Failed to copy %s to %s", targetPath, env.jarPath()), err);
+			throw new GetMe.PluginException(String.format("Failed to copy %s to %s", targetPath, jarPath), err);
 		}
 	}
 
-	private Path targetFile(Path sourceFileName) throws GetMe.Err {
-		String jarPath = env.jarPath();
-		if (Objects.isNull(jarPath) || jarPath.isEmpty()) {
-			throw new GetMe.Err("JARPATH environment variable is not set");
-		}
-		return fs.path(jarPath).resolve(sourceFileName);
+	private String readJarPath() throws GetMe.PluginException {
+		return env.readVar("JARPATH").orElseThrow(
+				() -> new GetMe.PluginException("JARPATH environment variable is not set"));
 	}
 
-	private Path sourceJar(Path workingDir, String targetPath) throws GetMe.Err {
+	private Path sourceJar(Path workingDir, String targetPath) throws GetMe.PluginException {
 		if (Objects.isNull(targetPath) || targetPath.isEmpty()) {
-			throw new GetMe.Err("No \"jar\" param provided");
+			throw new GetMe.PluginException("No \"jar\" param provided");
 		}
 		Path sourceFile = workingDir.resolve(targetPath);
 		if (!fs.exists(sourceFile)) {
-			throw new GetMe.Err(sourceFile + " does not exist");
+			throw new GetMe.PluginException(sourceFile + " does not exist");
 		}
 		return sourceFile;
 	}

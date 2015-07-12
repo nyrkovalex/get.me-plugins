@@ -1,10 +1,9 @@
 package com.github.nyrkovalex.get.me.mvn;
 
-import java.nio.file.Path;
+import com.github.nyrkovalex.get.me.api.GetMe;
+
 import java.util.List;
 import java.util.Optional;
-
-import com.github.nyrkovalex.get.me.api.GetMe;
 
 abstract class MvnPlugin implements GetMe.Plugin<MvnParams> {
 
@@ -17,10 +16,12 @@ abstract class MvnPlugin implements GetMe.Plugin<MvnParams> {
 	}
 
 	@Override
-	public void exec(Path path, Optional<MvnParams> params) throws GetMe.Err {
+	public void exec(GetMe.ExecutionContext context, Optional<MvnParams> params) throws GetMe.PluginException {
 		boolean hasGoals = params.isPresent() && params.get().hasGoals();
 		List<String> goals = hasGoals ? params.get().goals : defaultGoals;
-		mvn.run(goals).in(path);
+		mvn.run(goals)
+				.enableOutput(context.isDebug())
+				.in(context.getCwd());
 	}
 
 	@Override

@@ -1,21 +1,20 @@
 package com.github.nyrkovalex.get.me.mvn;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.logging.Logger;
-
+import com.github.nyrkovalex.get.me.api.GetMe;
+import com.github.nyrkovalex.seed.logging.Logging;
 import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.codehaus.plexus.util.cli.CommandLineException;
 
-import com.github.nyrkovalex.get.me.api.GetMe;
-import com.github.nyrkovalex.seed.Seed;
-import com.github.nyrkovalex.seed.logging.Logging;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 class Mvn {
 
@@ -48,15 +47,19 @@ class Mvn {
 			return this;
 		}
 
-		public void in(Path path) throws GetMe.Err {
-			LOG.fine(() -> String.format("running `mvn %s` in %s", Seed.Strings.join(" ", goals), path));
+		public void in(Path path) throws GetMe.PluginException {
+			LOG.fine(() -> String.format("running `mvn %s` in %s", targetsString(), path));
 			InvocationRequest request = createInvocationRequest(path);
 			Invoker invoker = createMvnInvoker(path);
 			run(request, invoker);
-			LOG.fine(() -> String.format("completed `mvn %s` in %s", Seed.Strings.join(" ", goals), path));
+			LOG.fine(() -> String.format("completed `mvn %s` in %s", targetsString(), path));
 		}
 
-		private void run(InvocationRequest request, Invoker invoker) throws GetMe.Err {
+		private String targetsString() {
+			return goals.stream().collect(Collectors.joining());
+		}
+
+		private void run(InvocationRequest request, Invoker invoker) throws GetMe.PluginException {
 			try {
 				InvocationResult result = invoker.execute(request);
 				CommandLineException executionException = result.getExecutionException();
@@ -65,10 +68,10 @@ class Mvn {
 				}
 				if (result.getExitCode() != 0) {
 					LOG.severe(() -> "Failed to build project :(");
-					throw new GetMe.Err("Maven execution failed");
+					throw new GetMe.PluginException("Maven execution failed");
 				}
 			} catch (MavenInvocationException | CommandLineException e) {
-				throw new GetMe.Err("Maven execution failed", e);
+				throw new GetMe.PluginException("Maven execution failed", e);
 			}
 		}
 
