@@ -26,14 +26,14 @@ public class PluginInstaller implements GetMe.Plugin<JarParams> {
 	public void exec(GetMe.ExecutionContext context, Optional<JarParams> params) throws GetMe.PluginException {
 		JarParams jarParams = params.orElseThrow(
 				() -> new GetMe.PluginException("`jar` parameter must be provided"));
+		Path sourceJarPath = context.getCwd().resolve(jarParams.jar);
+		Path targetJarPath = fs.path(environment.pluginsHome()).resolve(sourceJarPath.getFileName());
 		try {
-			Path pluginsDir = fs.path(environment.pluginsHome());
-			Path targetJar = context.getCwd().resolve(jarParams.jar);
-			fs.copy(targetJar, pluginsDir, StandardCopyOption.REPLACE_EXISTING);
-		} catch (IOException err) {
+			fs.copy(sourceJarPath, targetJarPath, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException ex) {
 			throw new GetMe.PluginException(
-					String.format("Failed to copy %s to %s", jarParams.jar, environment.pluginsHome()),
-					err
+					String.format("Failed to copy %s to %s", sourceJarPath, targetJarPath),
+					ex
 			);
 		}
 	}

@@ -19,10 +19,11 @@ import static org.mockito.Mockito.when;
 
 public class PluginInstallerTest {
 
-	@Mock private Path jarFile;
 	@Mock private Fs fs;
-	@Mock private Path pluginsDir;
 	@Mock private Path workingDir;
+	@Mock private Path pluginsDir;
+	@Mock private Path sourceJarLocation;
+	@Mock private Path targetJarLocation;
 	@Mock private GetMe.Environment environment;
 	@Mock private GetMe.ExecutionContext context;
 
@@ -34,7 +35,8 @@ public class PluginInstallerTest {
 	public void setUp() {
 		MockitoAnnotations.initMocks(this);
 		when(context.getCwd()).thenReturn(workingDir);
-		when(workingDir.resolve("plugin.jar")).thenReturn(jarFile);
+		when(workingDir.resolve("plugin.jar")).thenReturn(sourceJarLocation);
+		when(pluginsDir.resolve(sourceJarLocation.getFileName())).thenReturn(targetJarLocation);
 		when(environment.pluginsHome()).thenReturn("/home/me/get.me/plugins");
 		when(fs.path("/home/me/get.me/plugins")).thenReturn(pluginsDir);
 	}
@@ -48,12 +50,12 @@ public class PluginInstallerTest {
 	@Test
 	public void testShouldCopyJarToPluginsDir() throws Exception {
 		installer.exec(context, Optional.of(params));
-		verify(fs).copy(jarFile, pluginsDir, StandardCopyOption.REPLACE_EXISTING);
+		verify(fs).copy(sourceJarLocation, targetJarLocation, StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	@Test(expected = GetMe.PluginException.class)
 	public void testShouldRethrowIoError() throws Exception {
-		when(fs.copy(jarFile, pluginsDir, StandardCopyOption.REPLACE_EXISTING)).thenThrow(new IOException());
+		when(fs.copy(sourceJarLocation, targetJarLocation, StandardCopyOption.REPLACE_EXISTING)).thenThrow(new IOException());
 		installer.exec(context, Optional.of(params));
 	}
 }
